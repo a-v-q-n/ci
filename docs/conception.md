@@ -111,27 +111,27 @@ Dans chaque repo :
 
 Le reusable workflow est **résolu par GitHub au CI, jamais cloné** — donc rien à ajouter aux environnements/routines. **Brancher un nouveau projet** = écrire son `ci.yml` (build/test) + le job `deploy` (3 coordonnées) + `promote.yml`. Zéro modif du partagé.
 
-Config requise (une fois) : `avqn-dev` étant privé, autoriser ses workflows à être appelés par les autres repos du compte (Settings → Actions).
+`avqn-dev` est **public** : ses reusable workflows sont appelables par les autres repos sans réglage d'autorisation.
 
 ## 8. Le backbone `avqn-dev`
 
-Un repo, deux rôles, **jamais cloné en dev** :
+Repo **public**, deux rôles, **jamais attaché en source** :
 
-1. **Plugin user-scope** (`skills/` + `.claude-plugin/{plugin.json,marketplace.json}`) : superpowers vendorisées (TDD, systematic-debugging, verification, code-review…) + les wrappers `brainstorm-issue`, `dev`, `apercu` (l'œil visuel Playwright). Installé via la marketplace auto-hébergée (`manu-bernard/avqn-dev`) en scope user → **auto-enabled dans chaque session de chaque repo**, interactif comme routine. Les repos d'app ne portent **aucune** méthodo.
+1. **Plugin user-scope** (`skills/` + `.claude-plugin/{plugin.json,marketplace.json}`) : superpowers vendorisées (TDD, systematic-debugging, verification, code-review…) + les wrappers `brainstorm-issue`, `dev`, `apercu` (l'œil visuel Playwright). Installé en scope user par le script de config de l'env → **auto-enabled dans chaque session de chaque repo**, interactif comme routine. Les repos d'app ne portent **aucune** méthodo.
 2. **Reusable workflows** `deploy.yml` / `promote.yml` (§7), référencés par `uses:`.
 
 ## 9. Recette de l'environnement cloud
 
 Prouvée (voir mémoire `recette-routine-cloud-superpowers-playwright`).
 
-- **Plugin avqn-dev** : installé par le **script de config de l'env** `env/avqn-dev-env-setup.sh` (marketplace add + `claude plugin install avqn-dev@avqn-dev --scope user`), **avant la session** — un plugin se charge au démarrage de session, pas en cours de run. Scope user = auto-enabled sans aucune config par repo.
-- **Fetch du plugin (repo privé)** : dans le sandbox cloud, git est **proxifié aux sources**. `avqn-dev` est donc déclaré **source** de la routine pour que `marketplace add` puisse le cloner — même montage que `claude-plugins-official` pour superpowers. Son rôle est le **fetch du plugin**, pas l'agrégation de ses skills.
+- **Plugin avqn-dev** : installé par le **script de config de l'env** `env/avqn-dev-env-setup.sh`, **avant la session** (un plugin se charge au démarrage de session, pas en cours de run). Scope user = auto-enabled sans aucune config par repo.
+- **Fetch du plugin (via tarball, pas git)** : dans le sandbox, git est proxifié aux sources — tout `git clone` hors-source renvoie 403, **public ou privé**. Le proxy ne touche que git ; HTTP sort librement. On récupère donc le repo **public** `avqn-dev` en **tarball curl** (`…/archive/refs/heads/main.tar.gz`), on extrait, puis `claude plugin marketplace add <dossier local>` + `install --scope user`. Marche **sans qu'avqn-dev soit une source** → un seul repo ouvert. Le repo **doit être public** (curl sans auth). Script blindé au paste : pas de commentaire, pas de pipe, URL en variable.
 - **Permissions** : `.claude/settings.json` dans les repos d'app → `{"permissions":{"defaultMode":"bypassPermissions"}}`. Aucun prompt.
 - **MCP Playwright** : enregistré par le même script de config : `claude mcp add playwright --scope user -- npx -y @playwright/mcp@latest --headless --isolated --no-sandbox --browser chromium --executable-path /opt/pw-browsers/chromium`. Chromium est déjà dans l'image. `file://` bloqué → servir en `localhost`.
 
 ## 10. La routine de dev (cloud, horaire)
 
-- **Sources** : les repos d'app (clones de travail) **+ `avqn-dev`** — ce dernier uniquement comme canal de fetch du plugin via le git-proxy (cf. §9), pas pour agréger ses skills (la méthodo vient du plugin user-scope).
+- **Sources** : les repos d'app uniquement (clones de travail). `avqn-dev` n'est **pas** une source — le plugin est récupéré en tarball par le script de config (cf. §9), donc rien à attacher.
 - **Env** : `env/avqn-dev-env-setup.sh` (installe le plugin avqn-dev avant la session + MCP Playwright).
 - **Prompt minimal** : « déroule `/dev` sur les repos d'app sources ». La procédure vit dans le skill `/dev` du plugin, pas dans le prompt. Itère les repos d'app du registre `projects.txt`.
 
