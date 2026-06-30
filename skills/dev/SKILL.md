@@ -1,51 +1,50 @@
 ---
 name: dev
-description: Développement continu autonome — prend une issue VALIDÉE (label ready) d'un repo, l'implémente en TDD avec boucle qualité visuelle locale, gate via la CI sur la branche, puis merge en fast-forward sur main (ce qui déclenche le deploy preview). Orchestrateur des skills superpowers, sans brainstorm (l'issue ready EST la spec). Multi-repos, en boucle horaire.
+description: Développe une tâche jusqu'à la PREVIEW (jamais la prod), via un cœur commun — plan → TDD → qualité visuelle locale (apercu) → gate locale → auto-review → PR → gate CI sur la branche → FF merge main (déclenche le deploy preview). Deux amorces : ROUTINE (issue label=ready, autonome) ou INTERACTIF (conversation + brainstorming live avec l'humain, issue facultative). Orchestrateur des skills superpowers.
 ---
 
 # Dev
 
-Tu prends du travail **validé** (`label=ready`), tu le **codes en TDD**, tu le rends **beau et testé en local**, puis tu le **merges** sur `main` quand la CI est verte. Le merge déclenche tout seul le **deploy preview** (le `ci.yml` du repo). Tu ne déploies **rien** toi-même, **jamais** la prod.
+Tu portes du travail **jusqu'à la preview** : tu le **codes en TDD**, tu le rends **beau et testé en local**, puis tu le **merges en FF** sur `main` quand la CI est verte — ce qui déclenche seul le **deploy preview** (le `ci.yml` du repo). Tu ne déploies **rien** toi-même, **jamais** la prod (le promote prod est un geste humain).
 
-Tu es un **chef d'orchestre** : la discipline vient des skills superpowers (TDD, debugging, review, verification). L'issue `ready` **est** la spec — tu ne brainstormes **jamais**.
+Tu es un **chef d'orchestre** : la discipline vient des skills superpowers (TDD, debugging, review, verification).
 
-## Environnement (routine cloud)
-Sources clonées localement : ce repo `avqn-dev` (skills) + les repos d'app. Tu as un vrai env de dev (git, npm/pnpm, tests). Tu travailles dans le clone local du repo cible.
+## Le cœur (commun aux deux modes)
 
-**Opérations GitHub → serveur MCP GitHub** (charge ses tools via ToolSearch). En particulier les **Actions** (dispatch de `ci.yml` + suivi des runs) renvoient 403 avec `gh` dans le sandbox → **obligatoirement via le MCP**. Issues/labels/PR : MCP préféré, `gh api` (REST) en fallback — **jamais** les sous-commandes `gh issue/pr` (GraphQL bloqué). Le git (branche/commit/push/FF) passe par le proxy des clones, sans token.
+À partir d'une **spec** (d'où qu'elle vienne — voir les amorces) et d'une **branche** créée depuis `origin/main` :
 
-## Le gate d'entrée : SEULEMENT les issues `ready`
-Tu ne touches **que** les issues ouvertes `label=ready`. Une issue sans `ready` = proposition non validée → ignore.
+1. **Planifier + coder en TDD** : `superpowers:writing-plans` à partir de la spec, puis `superpowers:test-driven-development` (rouge → code → vert). Changement minimal. Bug → `superpowers:systematic-debugging`.
+2. **Qualité visuelle locale** : applique `apercu` SI le repo a une UI (cf. son `CLAUDE.md`) ET que la tâche touche le front. Sinon saute.
+3. **Gate complète locale** : `npm ci` (ou équivalent) puis la **commande de gate du `CLAUDE.md`** du repo. Corrige jusqu'au vert. N'ouvre pas une PR que la CI rejettera.
+4. **Auto-review adversariale** : `superpowers:requesting-code-review` (sous-agent frais). Applique les corrections réelles.
+5. **Commit + rebase + PR** (la PR ne sort QUE si 1→4 sont verts) : commit descriptif (bump de version si le repo en a un) ; `git rebase origin/main` (conflit non trivial → abort + mise de côté) ; push ; ouvre la PR via MCP GitHub (`Closes #n` si une issue existe ; corps = quoi/pourquoi/comment vérifier).
+6. **Gate via la CI sur la branche (MCP GitHub)** : dispatch `ci.yml` sur la branche, suivi jusqu'à `completed`. Rouge → ne merge pas (mise de côté + commentaire). Vert → étape 7.
+7. **Merge fast-forward sur `main`** : `git checkout main && git pull --ff-only` ; `git merge --ff-only <branche>` ; `git push origin main`. Push rejeté → rebase + re-gate + retry. Le push déclenche le deploy preview (image `sha-` déjà construite, pas de rebuild).
+8. **Clôturer + bilan** : vérifie la PR/issue ; `superpowers:verification-before-completion` avant de déclarer fait.
 
-## Boucle (par repo d'app)
+## Amorce routine (autonome, horaire)
 
-1. **Trouver le travail** : la plus ancienne issue ouverte `label=ready`, sans `pull_request`, sans `in-progress`, sans PR ouverte qui la référence. **Une** issue par repo par run.
-2. **Claim** : pose `in-progress` sur l'issue.
-3. **Brancher** : `cd ~/<repo>`, `git fetch origin`, `git checkout -b dev/issue-<n>-<slug> origin/main`. Lis le **`CLAUDE.md` du repo** (il fait foi : stack, gate, run, UI, versioning, coordonnées).
-4. **Planifier + coder en TDD** : déroule `superpowers:writing-plans` à partir de l'issue (= la spec d'intention), puis `superpowers:test-driven-development` (test rouge → code → vert). Changement minimal et ciblé. Bug en cours de route → `superpowers:systematic-debugging`. Issue ambiguë/trop grosse → ne devine pas : commente l'issue (clarification), retire `in-progress`, repo suivant.
-5. **Boucle qualité visuelle locale** — applique le skill **`apercu`** SI le repo a une UI (déclaré dans son `CLAUDE.md`) ET que la tâche touche le front. `apercu` boote l'app en local, capture aux breakpoints, juge le rendu (contre l'issue + la charte), et te fait **améliorer jusqu'à un résultat de qualité** (plafond d'itérations). Repo sans front / tâche backend → saute cette étape.
-6. **Gate complète locale** : `npm ci` (ou équivalent), puis **la commande de gate du `CLAUDE.md`** (lint/format/typecheck/test/e2e/build — exactement ce que la CI rejoue). **Corrige jusqu'au vert.** N'ouvre pas une PR que la CI rejettera.
-7. **Auto-review adversariale** : `superpowers:requesting-code-review` (sous-agent à contexte frais, impitoyable). Applique les corrections réelles.
-8. **Commit + rebase + PR** (la PR ne sort QUE si 5→7 sont au vert) :
-   - `git commit -am "<msg descriptif 🤖>"` ; bump de version si le repo en a un (cf. son `CLAUDE.md`).
-   - `git rebase origin/main`. Conflit non trivial → `git rebase --abort`, commente l'issue, retire `in-progress`, repo suivant.
-   - `git push -u origin dev/issue-<n>-<slug>` (`--force-with-lease` si rebasé).
-   - Ouvre la PR (MCP GitHub ; `Closes #<n>` ; corps = quoi/pourquoi/comment vérifier).
-9. **Gate via la CI sur la branche (MCP GitHub)** : dispatche `ci.yml` sur ta branche via le **MCP** (`actions_run_trigger`/`run_workflow`, `ref=<branche>`), suis le run jusqu'à `completed`.
-   - **Rouge** → ne merge pas. Laisse la PR, commente l'issue (CI rouge + lien run), retire `in-progress`. Repo suivant.
-   - **Vert** → étape 10.
-10. **Merge fast-forward sur `main`** :
-    - `git checkout main && git pull --ff-only origin main`.
-    - `git merge --ff-only dev/issue-<n>-<slug>` puis `git push origin main`.
-    - Push rejeté (la base a bougé) → re-`checkout` la branche, rebase, `push --force-with-lease`, **re-gate** (étape 9), retry. (Rare.)
-    - Le push sur `main` déclenche le `ci.yml` du repo : l'image `sha-<commit>` existe déjà (gatée sur la branche) → il **déploie la preview sans rebuild**. Tu ne dispatches rien.
-11. **Clôturer** : le `Closes #<n>` ferme l'issue. Vérifie la PR ; si encore `open`, ferme-la avec un commentaire « mergée en fast-forward ». Retire `in-progress` si présent.
-12. **Bilan** par repo : issue → PR mergée (main @ sha) + « preview en déploiement », ou « CI rouge » / « rien de ready » / « clarification ».
+Sans humain. La spec **est** une issue `label=ready` — tu ne brainstormes jamais.
+
+- **Environnement** : repos d'app clonés en sources ; le plugin `avqn-dev` fournit la méthodo. Opérations GitHub via le **MCP GitHub** (Actions en 403 avec `gh` dans le sandbox) ; git via le proxy des clones.
+- **Gate d'entrée** : seulement les issues ouvertes `label=ready`. Pas de `ready` = ignore.
+- **Sélection** : la plus ancienne issue `ready`, sans `pull_request`, sans `in-progress`, sans PR liée. **Une** par repo par run.
+- **Claim** : pose `in-progress` sur l'issue.
+- **Brancher** : `git checkout -b dev/issue-<n>-<slug> origin/main`. Lis le `CLAUDE.md` du repo (contrat).
+- **→ Déroule le cœur** (spec = corps de l'issue). Issue ambiguë/trop grosse → ne devine pas : commente, retire `in-progress`, repo suivant.
+
+## Amorce interactive (humain au clavier)
+
+Avec l'humain, dans un seul repo. La spec naît de la **conversation**.
+
+- **Cadrage** : `superpowers:brainstorming` en live (questions, options, design validé). Respecte sa discipline : pas de code avant accord sur le design.
+- **Issue facultative** : tu peux ouvrir une issue pour tracer (et la `Closes` à la PR), mais ce n'est pas requis — l'humain est l'aval, en continu. Pas de gate `ready`.
+- **Brancher** : `git checkout -b <type>/<slug> origin/main`. Lis le `CLAUDE.md` du repo (contrat).
+- **→ Déroule le cœur** (spec = le design validé en conversation). Tu vas **jusqu'à la preview** ; tu t'arrêtes avant la prod (promote = geste humain).
 
 ## Garde-fous
-- **Seulement `ready`** ; **une issue par repo par run** ; **changement minimal** ; **jamais deviner** (ambiguïté/conflit → mise de côté + commentaire).
-- **Tu merges (FF) sur `main`, jamais plus** : **jamais** de promotion prod, **jamais** d'appel Coolify ni de dispatch de workflow de déploiement (le deploy preview est porté par le `ci.yml` du repo sur push `main`).
-- **Jamais merge sur CI rouge** ; **rebase avant le FF** (FF strict).
-- **Gate complète locale + qualité visuelle AVANT la PR.**
-- **Auto-review obligatoire** ; **Actions via le MCP GitHub** (pas `gh`).
-- `superpowers:verification-before-completion` avant de déclarer une issue faite.
+- **Changement minimal** ; **jamais deviner** (ambiguïté/conflit → mise de côté + commentaire en routine ; question à l'humain en interactif).
+- **Tu vas jusqu'au FF sur `main`, jamais plus** : jamais de promo prod, jamais d'appel Coolify ni de dispatch de workflow de déploiement.
+- **Jamais merge sur CI rouge** ; **rebase avant le FF**.
+- **Gate locale complète + qualité visuelle AVANT la PR** ; **auto-review obligatoire** ; **Actions via le MCP GitHub** ; `verification-before-completion` avant de déclarer fait.
+- Routine : **seulement `ready`**, **une issue par repo par run**.
