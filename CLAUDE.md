@@ -6,7 +6,7 @@ Ce repo porte la **méthodologie partagée** (plugin user-scope) et la **mécani
 - `skills/` + `.claude-plugin/` — plugin `avqn-dev` distribué par la marketplace unique `avqn` (`manu-bernard/avqn-plugins`). Installé en scope user → auto-enabled dans chaque session, sans config par repo. Contient `brainstorm-issue` (prépare une issue `ready`), `dev` (cœur commun + deux amorces : interactive, routine), `apercu` (qualité visuelle) + superpowers vendorisées. **Les wrappers sont les points d'entrée** ; ils orchestrent superpowers.
 - `.github/workflows/deploy.yml` + `promote.yml` — grammaire Coolify partagée, **fine** : seulement des coordonnées (`service_uuid`, `health_url`, `image_tag`), zéro logique de typologie de projet.
 - `projects.txt` — registre des repos d'app.
-- `env/avqn-dev-env-setup.sh` — script de config de l'env cloud : installe le plugin avqn-dev + l'outillage Playwright (avqn-tooling) depuis la marketplace unique `avqn` (fallback tarball si les sources ne sont pas déclarées).
+- `env/avqn-dev-env-setup.sh` — script de config de l'env cloud, **sans aucune source déclarée** (le proxy sandbox bride `git clone`, pas curl/npm) : la méthodo `avqn-dev` s'installe par **tarball** du repo public (marketplace en chemin local) et Playwright par **`claude mcp add`** (serveur MCP npm, pas un plugin). Le magasin git `avqn` (avqn-plugins) sert **claude.ai**, pas cet env. Install 100 % « sans fichiers » (comme Playwright) = à terme un **package npm** de la méthodo.
 - `docs/conception.md` — l'état cible complet.
 
 ## Règles d'édition
