@@ -7,7 +7,7 @@
     {
       "name": "avqn-dev",
       "source": "./",
-      "description": "Méthodo de dev continu AVQN (brainstorm-issue, dev, apercu + superpowers).",
+      "description": "Méthodo de dev continu AVQN (brainstorm-issue, dev, apercu, new-project + superpowers).",
       "version": "1.0.0",
       "strict": true
     }

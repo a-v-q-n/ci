@@ -1,0 +1,17 @@
+name: promote
+# Promeut en PROD le sha validé en PREVIEW (double-palier seulement). Délègue la grammaire Coolify au
+# reusable workflow partagé d'avqn-dev ; ce repo ne porte que ses coordonnées. MANUEL, sur aval humain
+# (le geste 2 du cycle). Le secret COOLIFY_TOKEN est hérité du secret d'organisation.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  promote:
+    uses: a-v-q-n/avqn-dev/.github/workflows/promote.yml@main
+    with:
+      preview_uuid: {{PREVIEW_UUID}}
+      prod_uuid: {{PROD_UUID}}
+      health_url: {{PROMOTE_HEALTH_URL}}
+      mode: {{MODE}}
+    secrets:
+      coolify_token: ${{ secrets.COOLIFY_TOKEN }}

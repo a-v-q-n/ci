@@ -1,0 +1,11 @@
+# Référence LOCALE (`docker compose up`) — la prod ne passe pas par ce fichier (Coolify pull l'image
+# GHCR par sha). Sert à lancer l'app et ses services requis en local (gate/dev). Aligne la liste des
+# services et les variables d'environnement sur les besoins réels du repo au fil du dev.
+services:
+  web:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - PORT=3000
+{{COMPOSE_SERVICES}}
