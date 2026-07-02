@@ -1,6 +1,6 @@
 name: promote (reusable)
 # Grammaire Coolify PARTAGÉE — promote prod. Appelé par le promote.yml de chaque repo via
-# `uses: manu-bernard/avqn-dev/.github/workflows/promote.yml@v1`. Lit le sha actuellement en
+# `uses: a-v-q-n/avqn-dev/.github/workflows/promote.yml@main`. Lit le sha actuellement en
 # PREVIEW (source de vérité validée) et le reporte sur PROD. Coolify ne build jamais.
 # Deux modes (cf. deploy.yml) : service (compose, défaut) | application (docker image).
 on:
@@ -8,7 +8,7 @@ on:
     inputs:
       preview_uuid: { required: true,  type: string, description: "UUID Coolify preview (source du sha)" }
       prod_uuid:    { required: true,  type: string, description: "UUID Coolify prod (cible)" }
-      health_url:   { required: true,  type: string, description: "URL de health-check prod (200 attendu)" }
+      health_url:   { required: true,  type: string, description: "URL de health-check prod (200 attendu ; si la réponse expose un champ sha, il doit correspondre au sha promu)" }
       mode:         { required: false, type: string, default: service, description: "service | application" }
     secrets:
       coolify_token: { required: true }
@@ -27,7 +27,7 @@ jobs:
       PROD: ${{ inputs.prod_uuid }}
       HEALTH: ${{ inputs.health_url }}
     steps:
-      - name: Reporter le sha validé preview → prod + déclencher Coolify
+      - name: Promotion preview → prod (report sha, déclenche, vérifie 200 + sha)
         run: |
           set -euo pipefail
           case "$MODE" in
@@ -52,11 +52,21 @@ jobs:
                 -d "{\"docker_registry_image_tag\":\"$sha\"}" ;;
           esac
           curl -fsS -X POST "$API/deploy?uuid=$PROD" -H "Authorization: Bearer $COOLIFY_TOKEN"
-      - name: Health-check prod
-        run: |
+          expected="${sha#sha-}"
           for i in $(seq 1 40); do
-            code=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
-            [ "$code" = "200" ] && { echo "✓ prod répond 200"; exit 0; }
-            echo "tentative $i/40 (code ${code:-?}) ; nouvel essai 10s"; sleep 10
+            code=$(curl -sS --max-time 5 -o health-body -w '%{http_code}' "$HEALTH" || true)
+            if [ "$code" = "200" ]; then
+              served=$(jq -r '.sha // empty' health-body 2>/dev/null || true)
+              if [ -z "$served" ]; then
+                echo "::warning::health endpoint sans champ sha — vérification faible"
+                echo "✓ prod répond 200 (sans sha exposé)"; exit 0
+              fi
+              case "$served" in "$expected"*) echo "✓ prod répond 200 et sert le sha attendu ($expected)"; exit 0 ;; esac
+              case "$expected" in "$served"*) echo "✓ prod répond 200 et sert le sha attendu ($expected)"; exit 0 ;; esac
+              echo "tentative $i/40 : 200 mais sha servi '$served' ≠ attendu '$expected' (conteneur périmé) ; nouvel essai 10s"
+            else
+              echo "tentative $i/40 (code ${code:-?}) ; nouvel essai 10s"
+            fi
+            sleep 10
           done
-          echo "::error::prod ne répond pas 200 après ~7min"; exit 1
+          echo "::error::prod ne répond pas 200 avec le sha attendu ($expected) après ~7min"; exit 1

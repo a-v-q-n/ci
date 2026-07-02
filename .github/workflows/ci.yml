@@ -1,0 +1,29 @@
+name: ci
+# Filet du backbone. Ce repo ne livre rien (ni image, ni deploy) : la CI valide seulement ce dont
+# tout l'écosystème dépend — les reusable workflows lintés, le script d'env shellcheck, la cohérence
+# du plugin. Consommé en `@main`, elle ne protège qu'exécutée AVANT le merge : toute modification
+# passe par branche + PR + CI verte + FF merge (cf. CLAUDE.md).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint (tous les workflows)
+        run: |
+          set -euo pipefail
+          curl -fsSL -o dl-actionlint.bash \
+            https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash
+          bash dl-actionlint.bash 1.7.7
+          ./actionlint -color
+      - name: shellcheck (script d'env)
+        run: shellcheck env/avqn-dev-env-setup.sh
+      - name: cohérence plugin (manifestes + frontmatters skills)
+        run: node scripts/check-plugin.mjs

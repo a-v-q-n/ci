@@ -1,6 +1,6 @@
 name: deploy (reusable)
 # Grammaire Coolify PARTAGÉE — deploy vers la cible du push. Appelé par le ci.yml de chaque repo via
-# `uses: manu-bernard/avqn-dev/.github/workflows/deploy.yml@v1`. La cible dépend du palier du repo :
+# `uses: a-v-q-n/avqn-dev/.github/workflows/deploy.yml@main`. La cible dépend du palier du repo :
 # preview en double-palier, prod en mono-palier — ce workflow ne fait que repointer l'UUID fourni.
 # Coolify ne build jamais : on repointe l'image du service/application sur un sha immuable déjà
 # construit+testé, et on déclenche. Deux modes Coolify (bornés, pas de logique de typologie projet) :
@@ -10,7 +10,7 @@ on:
   workflow_call:
     inputs:
       uuid:       { required: true,  type: string, description: "UUID Coolify de la cible du push (preview en double-palier, prod en mono-palier)" }
-      health_url: { required: true,  type: string, description: "URL de health-check (200 attendu)" }
+      health_url: { required: true,  type: string, description: "URL de health-check (200 attendu ; si la réponse expose un champ sha, il doit correspondre au commit déployé)" }
       image_tag:  { required: true,  type: string, description: "Tag immuable, ex. sha-<commit12>" }
       mode:       { required: false, type: string, default: service, description: "service | application" }
     secrets:
@@ -46,11 +46,24 @@ jobs:
           esac
           curl -fsS -X POST "$API/deploy?uuid=$UUID" -H "Authorization: Bearer $COOLIFY_TOKEN"
           echo "🚀 \`$UUID\` ($MODE) pointé sur \`$TAG\`" >> "$GITHUB_STEP_SUMMARY"
-      - name: Health-check
+      - name: Health-check (200 + sha attendu si exposé)
         run: |
+          set -euo pipefail
+          expected="${TAG#sha-}"
           for i in $(seq 1 40); do
-            code=$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 5 "$HEALTH" || true)
-            [ "$code" = "200" ] && { echo "✓ la cible répond 200"; exit 0; }
-            echo "tentative $i/40 (code ${code:-?}) ; nouvel essai 10s"; sleep 10
+            code=$(curl -sS --max-time 5 -o health-body -w '%{http_code}' "$HEALTH" || true)
+            if [ "$code" = "200" ]; then
+              served=$(jq -r '.sha // empty' health-body 2>/dev/null || true)
+              if [ -z "$served" ]; then
+                echo "::warning::health endpoint sans champ sha — vérification faible"
+                echo "✓ la cible répond 200 (sans sha exposé)"; exit 0
+              fi
+              case "$served" in "$expected"*) echo "✓ la cible répond 200 et sert le sha attendu ($expected)"; exit 0 ;; esac
+              case "$expected" in "$served"*) echo "✓ la cible répond 200 et sert le sha attendu ($expected)"; exit 0 ;; esac
+              echo "tentative $i/40 : 200 mais sha servi '$served' ≠ attendu '$expected' (conteneur périmé) ; nouvel essai 10s"
+            else
+              echo "tentative $i/40 (code ${code:-?}) ; nouvel essai 10s"
+            fi
+            sleep 10
           done
-          echo "::error::la cible ne répond pas 200 après ~7min"; exit 1
+          echo "::error::la cible ne répond pas 200 avec le sha attendu ($expected) après ~7min"; exit 1

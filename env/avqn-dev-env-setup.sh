@@ -45,9 +45,13 @@ SETTINGS="$HOME/.claude/settings.json"
 mkdir -p "$(dirname "$SETTINGS")"
 [ -s "$SETTINGS" ] || echo '{}' > "$SETTINGS"
 tmp=$(mktemp)
-jq '.permissions.defaultMode = "bypassPermissions"
+if jq '.permissions.defaultMode = "bypassPermissions"
     | .permissions.allow = ((.permissions.allow // []) + ["mcp__playwright"] | unique)' "$SETTINGS" > "$tmp" \
-  && mv "$tmp" "$SETTINGS" && echo "permissions bypass OK" || { rm -f "$tmp"; echo "permissions bypass KO"; }
+    && mv "$tmp" "$SETTINGS"; then
+  echo "permissions bypass OK"
+else
+  rm -f "$tmp"; echo "permissions bypass KO"
+fi
 
 claude mcp list || true
 echo "== fin setup avqn =="

@@ -2,13 +2,13 @@
 
 Repo **jamais cloné en dev**, deux rôles :
 
-1. **Plugin user-scope** (`skills/` + `.claude-plugin/`) — la méthodologie de dev, distribuée via la marketplace auto-hébergée `manu-bernard/avqn-dev`. Installé en scope user → **auto-enabled dans chaque session de chaque repo** (interactif et routine), sans aucune config par repo :
+1. **Plugin user-scope** (`skills/` + `.claude-plugin/`) — la méthodologie de dev, distribuée via la marketplace auto-hébergée `a-v-q-n/avqn-dev`. Installé en scope user → **auto-enabled dans chaque session de chaque repo** (interactif et routine), sans aucune config par repo :
    - `brainstorm-issue` — interactif : brainstorme une idée → spec d'intention dans l'issue, pour préparer une issue `ready` que la routine prendra.
    - `dev` — un cœur commun (plan → TDD → qualité visuelle → gate → PR → CI → FF merge `main` → deploy du repo) avec deux amorces : **interactive** (conversation + brainstorm live, issue facultative) et **routine** (issue `label=ready`, autonome). Le merge `main` déploie ce que le repo déclare : preview en double-palier, prod en mono-palier.
    - `apercu` — boucle qualité visuelle locale (Playwright) avant la PR.
    - superpowers vendorisées (TDD, debugging, plans, review, verification…).
 
-2. **Reusable workflows** (`.github/workflows/`) — la mécanique Coolify partagée, appelée par chaque repo via `uses: manu-bernard/avqn-dev/.github/workflows/deploy.yml@v1` (résolu au CI, jamais cloné) :
+2. **Reusable workflows** (`.github/workflows/`) — la mécanique Coolify partagée, appelée par chaque repo via `uses: a-v-q-n/avqn-dev/.github/workflows/deploy.yml@main` (résolu au CI, jamais cloné) :
    - `deploy.yml` — repointe le service **cible du push** (prod en mono-palier, preview en double-palier) sur un sha, déclenche, health-check.
    - `promote.yml` — reporte le sha **preview → prod** (double-palier seulement).
 
