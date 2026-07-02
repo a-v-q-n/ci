@@ -158,11 +158,30 @@ curl -fsS https://<domaine-cible>/healthz
 Le job `deploy` fait déjà cette vérification (200 **et** sha attendu, ~7 min de retries) ; refais-la à la main
 pour confirmer. Sha servi ≠ sha poussé → conteneur périmé, ne déclare pas « fait ».
 
-## 8. Registre + récap
+## 8. Registres + récap
 
 1. **`projects.txt`** (dans `avqn-dev`) : ajoute la ligne `a-v-q-n/<repo>` — via une petite PR sur `avqn-dev`
    (toute modif d'`avqn-dev` passe par PR + CI + FF merge). C'est le registre des repos du dev continu.
-2. **Récapitule les gestes humains restants** :
+2. **Registre du cockpit infra** : enregistre le projet en mémoire sémantique (tool `avqn_memory_set` du
+   connecteur avqn-os), clé `infra:project:<slug>`, tags `infra,registre`. C'est ce registre que lit la
+   surface Projets d'`infra.avqn.ch` (shas preview/prod, diff, bouton promote). Valeur JSON :
+
+   ```json
+   {
+     "name": "<slug>",
+     "repo": "a-v-q-n/<repo>",
+     "tier": "double | mono",
+     "mode": "application | service",
+     "promoteWorkflow": "promote.yml",
+     "preview": { "uuid": "<uuid Coolify preview>", "healthUrl": "https://<preview>/healthz" },
+     "prod":    { "uuid": "<uuid Coolify prod>",    "healthUrl": "https://<domaine>/healthz" }
+   }
+   ```
+
+   `promoteWorkflow` : omissible quand c'est `promote.yml` (le défaut) ; obligatoire pour une app de
+   monorepo (ex. contentos → `promote-contentos.yml`). En mono-palier : pas de bloc `preview`.
+   La `healthUrl` doit être l'endpoint qui expose le `sha`.
+3. **Récapitule les gestes humains restants** :
    - **+1 source dans la routine cloud** (clone de travail) — config invisible depuis les repos, à ajouter à la main pour que la routine autonome prenne ce repo.
    - En double-palier : le **promote** prod (`promote.yml`, dispatch manuel) reste le geste 2.
    - Si services : créer la **base logique** dans l'instance Postgres centrale (hors périmètre auto) et poser les env vars applicatives dans Coolify.
