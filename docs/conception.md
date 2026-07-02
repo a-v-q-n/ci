@@ -132,7 +132,7 @@ Dans chaque repo :
 - `ci.yml` : `prep` + `build` + `test` (hétérogènes, locaux) + un job final `deploy: uses: a-v-q-n/avqn-dev/.github/workflows/deploy.yml@main` avec ses coordonnées (`uuid` = la cible du push `main` : prod en mono-palier, preview en double-palier).
 - `promote.yml` : une ligne `uses: …/promote.yml@main` avec ses coordonnées — **double-palier seulement**.
 
-Le reusable workflow est **résolu par GitHub au CI, jamais cloné** — donc rien à ajouter aux environnements/routines. **Brancher un nouveau projet** = écrire son `ci.yml` (build/test) + le job `deploy` (coordonnées) ; en double-palier, ajouter `promote.yml`. Zéro modif du partagé.
+Le reusable workflow est **résolu par GitHub au CI, jamais cloné** — donc rien à ajouter aux environnements/routines. **Brancher un nouveau projet** : le skill `/new-project` onboarde en un geste (questions → repo dans l'org + scaffold + service Coolify + vérification de la sonde santé) ; il reste à ajouter le repo aux sources de la routine cloud, et à créer une base logique si le repo en a besoin. Zéro modif du partagé.
 
 `avqn-dev` est **public** : ses reusable workflows sont appelables par les autres repos sans réglage d'autorisation.
 
@@ -140,7 +140,7 @@ Le reusable workflow est **résolu par GitHub au CI, jamais cloné** — donc ri
 
 Repo **public**, deux rôles, **jamais attaché en source** :
 
-1. **Plugin user-scope** (`skills/` + `.claude-plugin/{plugin.json,marketplace.json}`) : superpowers vendorisées (TDD, systematic-debugging, verification, code-review…) + les wrappers `brainstorm-issue`, `dev`, `apercu` (l'œil visuel Playwright). Installé en scope user par le script de config de l'env → **auto-enabled dans chaque session de chaque repo**, interactif comme routine. Les repos d'app ne portent **aucune** méthodo.
+1. **Plugin user-scope** (`skills/` + `.claude-plugin/{plugin.json,marketplace.json}`) : superpowers vendorisées (TDD, systematic-debugging, verification, code-review…) + les wrappers `brainstorm-issue`, `dev`, `apercu` (l'œil visuel Playwright), `new-project` (onboarde un nouveau repo en un geste). Installé en scope user par le script de config de l'env → **auto-enabled dans chaque session de chaque repo**, interactif comme routine. Les repos d'app ne portent **aucune** méthodo.
 2. **Reusable workflows** `deploy.yml` / `promote.yml` (§7), référencés par `uses:`.
 
 ## 9. Recette de l'environnement cloud
@@ -157,10 +157,3 @@ Prouvée (voir mémoire `recette-routine-cloud-superpowers-playwright`).
 - **Sources** : les repos d'app uniquement (clones de travail). `avqn-dev` n'est **pas** une source — le plugin est récupéré en tarball par le script de config (cf. §9), donc rien à attacher.
 - **Env** : `env/avqn-dev-env-setup.sh` (installe le plugin avqn-dev avant la session + MCP Playwright).
 - **Prompt minimal** : « déroule `/dev` sur les repos d'app sources ». La procédure vit dans le skill `/dev` du plugin, pas dans le prompt. Itère les repos d'app du registre `projects.txt`.
-
-## 11. Legacy à tuer
-
-- Routine **« Recette quotidienne »** (modèle centralisé `projects/*.json` + `build.yml`/`deploy.yml` dispatché — subsumé par `/dev`).
-- Routine **« Multi-source probe »** (debug).
-- Repo `avqn-deploy` : pièces utiles migrées vers `avqn-dev`, le reste archivé/supprimé (`projects.txt`, modèle recette centralisé).
-- Reliquats `avqn-workspace`.
