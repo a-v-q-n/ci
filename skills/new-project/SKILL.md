@@ -56,7 +56,7 @@ selon le **mode** :
 - `project_uuid`, `server_uuid`, `environment_name="production"`,
 - `domains="https://<domaine>"`, `ports_exposes="3000"`,
 - **sans `instant_deploy`** (aucune image n'existe encore),
-- `extra={ "health_check_path": "/healthz", "health_check_port": 3000 }` (chemin de santé configuré ; la vérification 200+sha vit dans le deploy).
+- `extra={ "health_check_path": "/healthz", "health_check_port": "3000" }` (chemin de santé configuré ; **`health_check_port` doit être une string** ; la vérification 200+sha vit dans le deploy).
 
 Récupère l'**UUID** dans la réponse (sinon `coolify_applications` par nom).
 
@@ -99,10 +99,15 @@ le premier push la repointera). Récupère l'**UUID** du service.
 
 ## 4. Le DNS
 
-Pour chaque domaine (prod, + preview en double) : `mcp__claude_ai_infra__dns_records` (zone `avqn.ch`) pour
-détecter, sinon `mcp__claude_ai_infra__dns_record_create` : `zone="avqn.ch"`, `type="A"`, `source="<sous-domaine>"`
-(ex. `test-np`, ou `<repo>.preview` en source composite), `target="46.62.162.135"` (IP du serveur Prod).
-Vérifie ensuite la résolution (`dns_record_get` ou `dig +short <domaine>`).
+D'abord **détecter** : `mcp__claude_ai_infra__dns_records` (zone `avqn.ch`). Un enregistrement **wildcard
+`*.avqn.ch → 46.62.162.135`** (serveur Prod) existe : il couvre déjà tout **sous-domaine à un seul label**
+sur Prod (`<repo>.avqn.ch`). Dans ce cas — le plus courant — **aucun enregistrement à créer**, Traefik route
+par le domaine posé sur la ressource Coolify. Vérifie la résolution (`dig +short <domaine>` → `46.62.162.135`).
+
+Crée un enregistrement dédié seulement si le domaine **n'est pas couvert** par le wildcard : cible sur un
+autre serveur, ou sous-domaine **multi-labels** (ex. `<repo>.preview.avqn.ch`, non capté par `*`). Alors
+`mcp__claude_ai_infra__dns_record_create` : `zone="avqn.ch"`, `type="A"`, `source="<sous-domaine>"` (ex.
+`<repo>.preview`), `target="46.62.162.135"`. Puis vérifie la résolution.
 
 ## 5. Générer le squelette (scaffold)
 
