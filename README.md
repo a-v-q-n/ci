@@ -1,26 +1,15 @@
-# avqn-dev — backbone du dev continu AVQN
+# ci — plomberie de déploiement AVQN
 
-Repo **jamais cloné en dev**, deux rôles :
+Repo **jamais cloné en dev** : la mécanique Coolify partagée, consommée par chaque repo d'app via
+`uses: a-v-q-n/ci/.github/workflows/<workflow>.yml@main` (résolu au CI, jamais cloné).
 
-1. **Plugin user-scope** (`skills/` + `.claude-plugin/`) — la méthodologie de dev, distribuée via la marketplace auto-hébergée `a-v-q-n/avqn-dev`. Installé en scope user → **auto-enabled dans chaque session de chaque repo** (interactif et routine), sans aucune config par repo :
-   - `brainstorm-issue` — interactif : brainstorme une idée → spec d'intention dans l'issue, pour préparer une issue `ready` que la routine prendra.
-   - `dev` — un cœur commun (plan → TDD → qualité visuelle → gate → PR → CI → FF merge `main` → deploy du repo) avec deux amorces : **interactive** (conversation + brainstorm live, issue facultative) et **routine** (issue `label=ready`, autonome). Le merge `main` déploie ce que le repo déclare : preview en double-palier, prod en mono-palier.
-   - `apercu` — boucle qualité visuelle locale (Playwright) avant la PR.
-   - superpowers vendorisées (TDD, debugging, plans, review, verification…).
+- `deploy.yml` — repointe la cible **du push** (prod en mono-palier, preview en double-palier) sur
+  un sha immuable déjà construit+testé, déclenche Coolify, health-check (200 **et** sha attendu
+  quand le endpoint l'expose).
+- `promote.yml` — reporte le sha **preview → prod** (double-palier seulement). La promotion est le
+  seul geste humain de release.
+- `ci.yml` — le filet du repo lui-même : actionlint sur les workflows. Ne livre rien.
 
-2. **Reusable workflows** (`.github/workflows/`) — la mécanique Coolify partagée, appelée par chaque repo via `uses: a-v-q-n/avqn-dev/.github/workflows/deploy.yml@main` (résolu au CI, jamais cloné) :
-   - `deploy.yml` — repointe le service **cible du push** (prod en mono-palier, preview en double-palier) sur un sha, déclenche, health-check.
-   - `promote.yml` — reporte le sha **preview → prod** (double-palier seulement).
-
-## Le minimum de gestes humains, le reste autonome
-(1) approuver une issue (label `ready`) pour alimenter la routine ; (2) promouvoir une preview en prod — **double-palier seulement** (en mono-palier, le push `main` va droit en prod).
-
-## Cycle
-`issue brute → /brainstorm-issue → spec dans l'issue → [ready] → /dev → PR → main → deploy` — puis **mono-palier** : prod directement ; **double-palier** : preview → `[promote]` → prod.
-
-## Pièces
-- `projects.txt` — registre des repos d'app du dev continu.
-- `env/avqn-dev-env-setup.sh` — script de config de l'environnement cloud (installe le plugin avqn-dev en scope user + enregistre le MCP Playwright).
-- `docs/conception.md` — la conception complète (état cible).
-
-Conception et recette détaillées : voir `docs/conception.md`.
+La méthode de dev (skills, cycle issue → PR → deploy) vit dans l'atelier
+([`a-v-q-n/atelier`](https://github.com/a-v-q-n/atelier)) ; le manifeste des repos d'app est son
+`repos.txt`.

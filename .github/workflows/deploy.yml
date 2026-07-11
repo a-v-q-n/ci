@@ -1,6 +1,6 @@
 name: deploy (reusable)
 # Grammaire Coolify PARTAGÉE — deploy vers la cible du push. Appelé par le ci.yml de chaque repo via
-# `uses: a-v-q-n/avqn-dev/.github/workflows/deploy.yml@main`. La cible dépend du palier du repo :
+# `uses: a-v-q-n/ci/.github/workflows/deploy.yml@main`. La cible dépend du palier du repo :
 # preview en double-palier, prod en mono-palier — ce workflow ne fait que repointer l'UUID fourni.
 # Coolify ne build jamais : on repointe l'image du service/application sur un sha immuable déjà
 # construit+testé, et on déclenche. Deux modes Coolify (bornés, pas de logique de typologie projet) :

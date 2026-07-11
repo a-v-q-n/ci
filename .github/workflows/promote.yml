@@ -1,6 +1,6 @@
 name: promote (reusable)
 # Grammaire Coolify PARTAGÉE — promote prod. Appelé par le promote.yml de chaque repo via
-# `uses: a-v-q-n/avqn-dev/.github/workflows/promote.yml@main`. Lit le sha actuellement en
+# `uses: a-v-q-n/ci/.github/workflows/promote.yml@main`. Lit le sha actuellement en
 # PREVIEW (source de vérité validée) et le reporte sur PROD. Coolify ne build jamais.
 # Deux modes (cf. deploy.yml) : service (compose, défaut) | application (docker image).
 on:
