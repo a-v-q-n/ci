@@ -10,6 +10,6 @@ Repo **jamais cloné en dev** : la mécanique Coolify partagée, consommée par 
   seul geste humain de release.
 - `ci.yml` — le filet du repo lui-même : actionlint sur les workflows. Ne livre rien.
 
-La méthode de dev (skills, cycle issue → PR → deploy) vit dans l'atelier
-([`a-v-q-n/atelier`](https://github.com/a-v-q-n/atelier)) ; le manifeste des repos d'app est son
-`repos.txt`.
+La méthode de dev (triage, cycle issue → PR → merge, review, démarrage) vit dans le plugin
+`avqn-dev` de la marketplace [`a-v-q-n/skills`](https://github.com/a-v-q-n/skills) ; chaque repo
+d'app porte son contrat dans son `CLAUDE.md`.
