@@ -13,8 +13,9 @@ cloné en dev : les repos d'app le consomment en `uses: a-v-q-n/ci/.github/workf
 - `.github/workflows/ci.yml` — le filet : actionlint sur les workflows. Ne livre rien (ni image,
   ni deploy).
 
-La méthode de dev (skills, cycle) vit dans l'atelier (`a-v-q-n/atelier`) ; le registre des repos
-d'app est son `repos.txt`.
+La méthode de dev (triage, cycle, review, démarrage) vit dans le plugin `avqn-dev` de la
+marketplace `a-v-q-n/skills` ; chaque repo d'app porte son contrat dans son `CLAUDE.md`. `ci` ne
+sait rien de la méthode : il livre ce qu'on lui donne.
 
 ## Règles d'édition
 
@@ -27,4 +28,4 @@ d'app est son `repos.txt`.
   consommateurs les appellent en `@main`, un changement cassant les casse tous d'un coup.
 - Les reusable workflows restent **fins** : si tu es tenté d'y ajouter un `if` de typologie projet,
   c'est que ça doit vivre dans le `ci.yml` du repo concerné, pas ici.
-- **`ci` reste isolé de l'atelier** : un bug du cockpit ne doit jamais pouvoir casser la prod.
+- **`ci` reste isolé de la méthode et des apps** : un bug d'un skill, d'un hook ou d'un repo ne doit jamais pouvoir casser la prod.
